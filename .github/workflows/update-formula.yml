@@ -2,9 +2,14 @@ name: Update Formula
 
 on:
   repository_dispatch:
-    types: [new-release]
+    types:
+      - nextdns-blocker-release
   workflow_dispatch:
     inputs:
+      formula:
+        description: 'Formula name (e.g., nextdns-blocker)'
+        required: true
+        default: 'nextdns-blocker'
       version:
         description: 'Version to update to (e.g., 5.4.0)'
         required: true
@@ -18,46 +23,72 @@ jobs:
     steps:
       - name: Checkout tap repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Homebrew
         uses: Homebrew/actions/setup-homebrew@master
+        continue-on-error: true  # Post-cleanup may fail when using local tap
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Get version
-        id: version
+      - name: Determine formula and version
+        id: params
         run: |
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            case "${{ github.event.action }}" in
+              "nextdns-blocker-release")
+                FORMULA="nextdns-blocker"
+                ;;
+              *)
+                echo "Unknown event type: ${{ github.event.action }}"
+                exit 1
+                ;;
+            esac
             VERSION="${{ github.event.client_payload.version }}"
-            # Remove 'v' prefix if present
             VERSION="${VERSION#v}"
           else
+            FORMULA="${{ github.event.inputs.formula }}"
             VERSION="${{ github.event.inputs.version }}"
           fi
+          echo "formula=$FORMULA" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Updating to version: $VERSION"
+          echo "Updating $FORMULA to version $VERSION"
 
       - name: Update formula
         run: |
-          chmod +x scripts/update-formula.sh
-          ./scripts/update-formula.sh "${{ steps.version.outputs.version }}"
+          chmod +x scripts/update-pypi-formula.sh
+          ./scripts/update-pypi-formula.sh "${{ steps.params.outputs.formula }}" "${{ steps.params.outputs.version }}"
 
       - name: Test formula
         run: |
-          brew install --build-from-source Formula/nextdns-blocker.rb
-          nextdns-blocker --version
+          # Remove existing tap if any (to avoid remote mismatch)
+          brew untap aristeoibarra/tap 2>/dev/null || true
+          # Tap the current repository to make formula available
+          brew tap aristeoibarra/tap "$PWD"
+          # Install from tap with build from source
+          brew install --build-from-source aristeoibarra/tap/${{ steps.params.outputs.formula }}
+          ${{ steps.params.outputs.formula }} --version
 
       - name: Audit formula
         run: |
-          brew audit --strict Formula/nextdns-blocker.rb || true
+          brew audit --strict aristeoibarra/tap/${{ steps.params.outputs.formula }} || true
+
+      - name: Cleanup tap before commit
+        run: |
+          # Untap and remove tap directory to prevent Homebrew action cleanup error
+          brew untap aristeoibarra/tap 2>/dev/null || true
+          rm -rf /opt/homebrew/Library/Taps/aristeoibarra/homebrew-tap 2>/dev/null || true
 
       - name: Commit and push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/nextdns-blocker.rb
-          git diff --staged --quiet || git commit -m "Update nextdns-blocker to ${{ steps.version.outputs.version }}"
-          git push
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+          git add "Formula/${{ steps.params.outputs.formula }}.rb"
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update ${{ steps.params.outputs.formula }} to ${{ steps.params.outputs.version }}"
+            git push origin main
+          fi

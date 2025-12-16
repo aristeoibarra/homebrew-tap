@@ -1,49 +1,52 @@
-# Homebrew Tap for NextDNS Blocker
+# Homebrew Tap
 
-This is the official Homebrew tap for [nextdns-blocker](https://github.com/aristeoibarra/nextdns-blocker).
+Personal Homebrew tap for macOS and Linux.
 
 ## Installation
 
 ```bash
 brew tap aristeoibarra/tap
-brew install nextdns-blocker
 ```
 
-Or install directly:
+## Available Formulas
+
+| Formula | Description | Install |
+|---------|-------------|---------|
+| [nextdns-blocker](https://github.com/aristeoibarra/nextdns-blocker) | CLI tool for NextDNS domain blocking with per-domain scheduling | `brew install nextdns-blocker` |
+
+## Quick Install
+
+Install any formula directly without tapping first:
+
+```bash
+brew install aristeoibarra/tap/<formula>
+```
+
+For example:
 
 ```bash
 brew install aristeoibarra/tap/nextdns-blocker
 ```
 
-## Usage
-
-After installation, run the setup wizard:
-
-```bash
-nextdns-blocker init
-```
-
-For more information, visit the [main repository](https://github.com/aristeoibarra/nextdns-blocker).
-
 ## Updating
 
 ```bash
 brew update
-brew upgrade nextdns-blocker
+brew upgrade <formula>
 ```
 
 ## Uninstalling
 
 ```bash
-brew uninstall nextdns-blocker
+brew uninstall <formula>
+
+# Remove the tap entirely
 brew untap aristeoibarra/tap
 ```
 
-## Available Formulas
+## Adding New Formulas
 
-| Formula | Description |
-|---------|-------------|
-| `nextdns-blocker` | CLI tool for NextDNS domain blocking with per-domain scheduling |
+See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to add new formulas to this tap.
 
 ## License
 
