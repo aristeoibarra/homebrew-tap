@@ -1,0 +1,63 @@
+name: Update Formula
+
+on:
+  repository_dispatch:
+    types: [new-release]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to update to (e.g., 5.4.0)'
+        required: true
+
+jobs:
+  update-formula:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout tap repository
+        uses: actions/checkout@v4
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            VERSION="${{ github.event.client_payload.version }}"
+            # Remove 'v' prefix if present
+            VERSION="${VERSION#v}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Updating to version: $VERSION"
+
+      - name: Update formula
+        run: |
+          chmod +x scripts/update-formula.sh
+          ./scripts/update-formula.sh "${{ steps.version.outputs.version }}"
+
+      - name: Test formula
+        run: |
+          brew install --build-from-source Formula/nextdns-blocker.rb
+          nextdns-blocker --version
+
+      - name: Audit formula
+        run: |
+          brew audit --strict Formula/nextdns-blocker.rb || true
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/nextdns-blocker.rb
+          git diff --staged --quiet || git commit -m "Update nextdns-blocker to ${{ steps.version.outputs.version }}"
+          git push
