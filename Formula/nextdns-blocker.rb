@@ -6,8 +6,8 @@ class NextdnsBlocker < Formula
 
   desc "CLI tool for NextDNS domain blocking with per-domain scheduling"
   homepage "https://github.com/aristeoibarra/nextdns-blocker"
-  url "https://files.pythonhosted.org/packages/b1/c2/27b454d8f0f9f4ca197cfe87b0bcce7284771841f90bee13361e7e584da8/nextdns_blocker-6.1.0.tar.gz"
-  sha256 "4b12fdd0d27fac8940276eb0be6f278c15f1dd65914f4f19000a1f24ff3a4ba1"
+  url "https://files.pythonhosted.org/packages/8f/26/8ed22b871811e04a338d1dd541de1d874a22686b4aa21989a369ac9928ae/nextdns_blocker-6.1.1.tar.gz"
+  sha256 "57f24d233a1b19b434df7b199f7b563e4a1adaff81d432824feb540b2dcf8c6a"
   license "MIT"
   head "https://github.com/aristeoibarra/nextdns-blocker.git", branch: "prod"
 
